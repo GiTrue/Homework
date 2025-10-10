@@ -1,0 +1,149 @@
+import smtplib
+import imaplib
+import email
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.message import EmailMessage # Современный класс для сообщений
+
+class EmailClient:
+    """
+    Класс для работы с почтой, позволяющий отправлять и получать письма 
+    через SMTP и IMAP (по умолчанию для Gmail).
+    """
+
+    # Атрибуты класса - адреса серверов по умолчанию (соответствует PEP8)
+    GMAIL_SMTP_SERVER = "smtp.gmail.com"
+    GMAIL_IMAP_SERVER = "imap.gmail.com"
+    
+    def __init__(self, email_address, password, 
+                 smtp_server=GMAIL_SMTP_SERVER, imap_server=GMAIL_IMAP_SERVER):
+        """
+        Инициализирует почтовый клиент с учетными данными и адресами серверов.
+
+        Аргументы:
+            email_address (str): Адрес электронной почты (логин).
+            password (str): Пароль или пароль приложения для входа.
+            smtp_server (str): Адрес SMTP-сервера для отправки.
+            imap_server (str): Адрес IMAP-сервера для получения.
+        """
+        # Атрибуты экземпляра (соответствует PEP8)
+        self.email_address = email_address
+        self.password = password
+        self.smtp_server = smtp_server
+        self.imap_server = imap_server
+
+    def send_message(self, recipients, subject, body):
+        """
+        Отправляет письмо одному или нескольким получателям.
+
+        Аргументы:
+            recipients (list[str]): Список адресов получателей.
+            subject (str): Тема письма.
+            body (str): Текст сообщения.
+        """
+        try:
+            # Создание сообщения
+            msg = MIMEMultipart()
+            msg['From'] = self.email_address
+            msg['To'] = ', '.join(recipients)
+            msg['Subject'] = subject
+            msg.attach(MIMEText(body, 'plain'))
+
+            # Подключение к SMTP-серверу
+            with smtplib.SMTP(self.smtp_server, 587) as server:
+                server.ehlo()
+                server.starttls()
+                server.ehlo()
+                
+                # Вход и отправка
+                server.login(self.email_address, self.password)
+                server.sendmail(self.email_address, recipients, msg.as_string())
+                
+            print(f"Письмо успешно отправлено {len(recipients)} получателям.")
+
+        except Exception as e:
+            print(f"Ошибка при отправке письма: {e}")
+
+    def fetch_latest_message(self, folder="inbox", search_header=None):
+        """
+        Получает последнее письмо из указанной папки, опционально с фильтром по теме.
+
+        Аргументы:
+            folder (str): Папка для поиска (по умолчанию "inbox").
+            search_header (str | None): Значение для поиска в заголовке Subject.
+            
+        Возвращает:
+            email.message.Message | None: Объект EmailMessage или None, если писем нет.
+        """
+        try:
+            # Подключение к IMAP-серверу с SSL
+            with imaplib.IMAP4_SSL(self.imap_server) as mail:
+                mail.login(self.email_address, self.password)
+                mail.select(folder)
+
+                # Формирование критерия поиска
+                criterion = f'(HEADER Subject "{search_header}")' if search_header else 'ALL'
+                
+                # Поиск UID писем
+                result, data = mail.uid('search', None, criterion)
+                
+                # Проверка наличия писем
+                if not data or not data[0]:
+                    print("Нет писем, соответствующих заданному критерию.")
+                    return None
+                
+                # Получение UID последнего письма
+                latest_email_uid = data[0].split()[-1]
+                
+                # Получение содержимого письма по UID
+                result, data = mail.uid('fetch', latest_email_uid, '(RFC822)')
+                raw_email = data[0][1]
+                
+                # Парсинг сырого письма в объект EmailMessage
+                email_message = email.message_from_bytes(raw_email)
+                return email_message
+                
+        except Exception as e:
+            print(f"Ошибка при получении письма: {e}")
+            return None
+
+# ---
+
+if __name__ == '__main__':
+    # Демонстрационные данные (имитация "захардкоженных" значений)
+    test_login = 'your_login@gmail.com' 
+    test_password = 'your_app_password' # Используйте пароль приложения!
+    test_subject = 'Тестовое письмо для рефакторинга'
+    test_recipients = ['vasya@email.com', 'petya@email.com']
+    test_message_body = 'Это тело тестового сообщения, отправленного из рефакторингового класса.'
+
+    print("--- Инициализация почтового клиента ---")
+    # 1. Создание экземпляра класса (инициализация в конструкторе)
+    client = EmailClient(test_login, test_password)
+    
+    # --- Демонстрация отправки ---
+    print("\n--- Демонстрация отправки письма ---")
+    # 2. Отправка письма (вынесено в метод с аргументами)
+    # ПРИМЕЧАНИЕ: Для реальной отправки замените test_login/test_password на актуальные данные
+    # client.send_message(test_recipients, test_subject, test_message_body) 
+    print("Вызов метода send_message() закомментирован. Используйте реальные учетные данные для тестирования.")
+
+    # --- Демонстрация получения ---
+    print("\n--- Демонстрация получения последнего письма ---")
+    # 3. Получение письма (вынесено в метод)
+    latest_mail = client.fetch_latest_message(search_header=None) # Получить последнее письмо (без фильтра)
+    
+    if latest_mail:
+        print("\nУспешно получено последнее письмо:")
+        print(f"От: {latest_mail['From']}")
+        print(f"Тема: {latest_mail['Subject']}")
+        # Попытка извлечь простой текст
+        if latest_mail.is_multipart():
+            for part in latest_mail.walk():
+                content_type = part.get_content_type()
+                content_disposition = str(part.get("Content-Disposition"))
+                if content_type == 'text/plain' and 'attachment' not in content_disposition:
+                    print(f"Частичный текст: {part.get_payload(decode=True).decode()}")
+                    break
+        else:
+             print(f"Тело: {latest_mail.get_payload(decode=True).decode()}")
