@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+    Каталог книг
+    {% if date %}
+        — {{ date|date:"d.m.Y" }}
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+    <div class="container">
+        <div class="header">
+            <h1><a href="{% url 'books' %}">Каталог</a></h1> 
+            {% if date %}
+                <h2>Книги, опубликованные {{ date|date:"d M Y" }}</h2>
+            {% endif %}
+        </div>
+        
+        <div class="row">
+            {% for book in books %}
+            <div class="book col-md-4">
+                <h2>{{ book.name }}</h2>
+                <p>Автор: {{ book.author }}</p>
+                <p>Дата публикации: {{ book.pub_date|date:"Y-m-d" }}</p>
+            </div>
+            {% empty %}
+            <div class="col-md-12">
+                <p>Книги не найдены.</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if date %}
+            <div class="row pagination-controls">
+                {% if prev_date_url %}
+                    <a href="{{ prev_date_url }}" class="button u-pull-left">← Книги за предыдущую дату</a>
+                {% else %}
+                    <span class="button u-pull-left disabled">← Предыдущая дата</span>
+                {% endif %}
+
+                {% if next_date_url %}
+                    <a href="{{ next_date_url }}" class="button u-pull-right">Книги за следующую дату →</a>
+                {% else %}
+                    <span class="button u-pull-right disabled">Следующая дата →</span>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}
