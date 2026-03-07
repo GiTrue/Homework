@@ -1,0 +1,18 @@
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: app
+    ports:
+      - "5431:5432"
+
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      PG_DSN: postgresql+asyncpg://app:secret@db:5432/app
+    depends_on:
+      - db
