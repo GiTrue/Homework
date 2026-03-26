@@ -7,7 +7,8 @@ class Advertisement(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String(100), nullable=False)
-    description = Column(String(1000))
+    # ИСПРАВЛЕНИЕ: добавлено nullable=False, поле стало обязательным
+    description = Column(String(1000), nullable=False)
     price = Column(Float, nullable=False)
     author = Column(String(100), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
