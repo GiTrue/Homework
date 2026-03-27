@@ -10,8 +10,8 @@
 - Асинхронность: Обработка тяжелых изображений происходит в фоновом режиме через Celery и Redis.
 
 # Структура проекта
-    ```bash
-
+```text
+.
 ├── app.py              # Flask API (HTTP-роуты)
 ├── tasks.py            # Celery воркер и логика ИИ
 ├── Dockerfile          # Сборка образа приложения
@@ -20,8 +20,9 @@
 ├── models/
 │   └── EDSR_x2.pb      # Файл модели (необходимо добавить вручную)
 └── README.md           # Инструкция
+```
 
-    ```bash
+    
 
 ## Инструкция по запуску
 
@@ -31,11 +32,11 @@
 2. Сборка и запуск
 Убедитесь, что у вас установлены Docker и Docker Compose. Выполните команду в терминале:
 
-```bash
+```text
 
 docker-compose up --build
 
-```bash
+```
 
 
 После завершения сборки:
@@ -51,22 +52,22 @@ Redis будет запущен на порту 6379
 
 Отправьте POST запрос с файлом (ключ file).
 
-    ```bash
+```text
 
 curl -X POST -F "file=@path_to_your_image.png" http://localhost:5000/upscale
     
-	```bash
+```
 	
 
 Шаг 2: Проверка статуса
 
 Используйте полученный task_id, чтобы узнать состояние обработки.
 
-    ```bash
+```text
 
 curl http://localhost:5000/tasks/<task_id>
     
-	```bash
+```
 	
 Ответ (в процессе): {"status": "PENDING"}
 Ответ (готово): {"status": "SUCCESS", "link": "/processed/<task_id>"}
@@ -76,11 +77,11 @@ curl http://localhost:5000/tasks/<task_id>
 
 Перейдите по ссылке из ответа или используйте:
 
-    ```bash
+```text
 
 curl http://localhost:5000/processed/<task_id> --output upscaled_image.png
     
-	```bash
+```
 	
 
 ## Технологический стек
